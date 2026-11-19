@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Li-Fi у солоній воді</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: PhET-style lab — bright play area on the left, rounded control panels on the right, screen tabs at the bottom. Single light theme by choice. */
+:root{
+  --sky:#dff1fb;          /* play area */
+  --panel:#f4f8fc;        /* control panels */
+  --ink:#16243b;          /* text */
+  --muted:#5b6b82;
+  --line:#c9d6e5;
+  --accent:#f28c28;       /* PhET-orange reset / primary */
+  --navy:#13254a;
+  --blue:#2563eb; --green:#16a34a; --red:#dc2626;
+  --font-display:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-body:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:#ffffff;color:var(--ink);font-family:var(--font-body);font-size:15px;display:flex;flex-direction:column}
+header{background:var(--navy);color:#fff;display:flex;align-items:center;gap:14px;padding:10px 18px;flex-wrap:wrap}
+header h1{font-family:var(--font-display);font-size:20px;font-weight:800;margin:0;text-wrap:balance}
+header .sub{font-size:13px;opacity:.75}
+header .spacer{flex:1}
+.btn{font:inherit;font-weight:700;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:10px;padding:7px 12px;cursor:pointer}
+.btn:hover{background:#eef4fb}
+.btn:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #7cc4ff;outline-offset:2px}
+header .btn{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.3)}
+header .btn:hover{background:rgba(255,255,255,.2)}
+main{flex:1;min-height:0;overflow-y:scroll;overflow-x:hidden;scrollbar-gutter:stable}
+.screen{display:none;padding:16px;gap:16px}
+.screen.active{display:grid;grid-template-columns:minmax(0,1fr) 330px}
+@media (max-width:900px){.screen.active{grid-template-columns:1fr}}
+.stage{background:var(--sky);border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.stage canvas{width:100%;display:block;border-radius:12px}
+.side{display:flex;flex-direction:column;gap:12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.panel h2{font-family:var(--font-display);font-size:15px;margin:0;font-weight:800}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.val{font-family:var(--font-mono);font-weight:700;background:#fff;border:1px solid var(--line);border-radius:8px;padding:2px 8px;min-width:76px;text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--accent);height:26px}
+.presets{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:13px;font-weight:700;border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 10px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip.b[aria-pressed="true"]{background:var(--blue);border-color:var(--blue)}
+.chip.g[aria-pressed="true"]{background:var(--green);border-color:var(--green)}
+.chip.r[aria-pressed="true"]{background:var(--red);border-color:var(--red)}
+.hint{font-size:12.5px;color:var(--muted);line-height:1.4}
+label.check{display:flex;gap:8px;align-items:center;cursor:pointer}
+.formula{font-family:"Cambria","Times New Roman",serif;font-size:18px;text-align:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px}
+.formula small{font-family:var(--font-body);font-size:12px;color:var(--muted);display:block;margin-top:4px}
+.bars{display:flex;flex-direction:column;gap:6px}
+.bar{display:grid;grid-template-columns:70px 1fr 54px;align-items:center;gap:6px;font-size:13px}
+.track{height:12px;background:#fff;border:1px solid var(--line);border-radius:6px;overflow:hidden;display:flex}
+.track span{display:block;height:100%}
+.legend{display:flex;gap:12px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
+th{font-weight:800;color:var(--muted);font-size:12px}
+.tablewrap{overflow-x:auto;max-height:220px;overflow-y:auto;background:#fff;border-radius:10px;border:1px solid var(--line)}
+.reset{width:46px;height:46px;border-radius:50%;background:var(--accent);border:none;color:#fff;font-size:24px;cursor:pointer;box-shadow:0 2px 0 #c86a12;align-self:flex-end}
+.reset:hover{filter:brightness(1.05)}
+nav.tabs{display:flex;justify-content:center;gap:10px;background:#0d1a35;padding:8px;flex-wrap:wrap}
+nav.tabs button{font:inherit;font-weight:800;color:#cfe0ff;background:transparent;border:2px solid transparent;border-radius:12px;padding:6px 14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:120px}
+nav.tabs button .ico{font-size:12px;font-weight:600;opacity:.8}
+nav.tabs button[aria-selected="true"]{border-color:#ffd23f;color:#fff;background:rgba(255,255,255,.08)}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:1100px){.charts{grid-template-columns:1fr}}
+.chartcard{background:#fff;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.chartcard h3{margin:0;font-size:14px;font-weight:800}
+.readout{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{background:#fff;border-radius:12px;padding:8px 10px;border:2px solid var(--line)}
+.tile .n{font-family:var(--font-mono);font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.tile .l{font-size:12px;color:var(--muted)}
+.tile.b{border-color:var(--blue)} .tile.g{border-color:var(--green)} .tile.r{border-color:var(--red)}
+.tile.b .n{color:var(--blue)} .tile.g .n{color:var(--green)} .tile.r .n{color:var(--red)}
+.score{font-family:var(--font-mono);font-size:20px;font-weight:700}
+.msg{border-radius:10px;padding:8px 10px;font-weight:700;font-size:14px;background:#fff;border:1px solid var(--line)}
+.msg.ok{background:#e7f8ee;border-color:#7bd39b;color:#11643a}
+.msg.bad{background:#fdeeee;border-color:#f2a1a1;color:#8f1d1d}
+.panel select{max-width:100%;min-width:0}
+input[type=number]{font:inherit;font-family:var(--font-mono);width:110px;padding:6px 8px;border-radius:8px;border:1px solid var(--line)}
+dialog{border:none;border-radius:16px;max-width:720px;width:calc(100% - 32px);padding:0;color:var(--ink)}
+dialog::backdrop{background:rgba(10,20,40,.45)}
+.dlg{padding:18px 22px;display:flex;flex-direction:column;gap:10px;max-height:80vh;overflow:auto;line-height:1.5}
+.dlg h2{margin:0;font-size:20px}
+.dlg h3{margin:6px 0 0;font-size:15px}
+.dlg p,.dlg li{max-width:68ch}
+footer{font-size:12px;color:var(--muted);padding:0 16px 10px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Li-Fi у солоній воді</h1>
+  <span class="sub">Віртуальна лабораторія: як концентрація NaCl послаблює світло синього, зеленого і червоного кольору</span>
+  <span class="spacer"></span>
+  <button class="btn" id="aboutBtn" type="button">Про модель</button>
+</header>
+
+<main>
+<!-- ========== SCREEN 1: LAB ========== -->
+<section class="screen active" id="scr-lab" aria-label="Лабораторія">
+  <div class="stage">
+    <canvas id="labCanvas" data-h="400" height="400" aria-label="Світлодіод, кювета з розчином NaCl і фотодіод"></canvas>
+    <div class="panel" style="background:#fff">
+      <div class="row" style="justify-content:space-between">
+        <h2>Журнал вимірювань</h2>
+        <div class="row">
+          <button class="btn" id="recBtn" type="button">Записати вимір</button>
+          <button class="btn" id="copyBtn" type="button">Копіювати таблицю</button>
+          <button class="btn" id="clrBtn" type="button">Очистити</button>
+        </div>
+      </div>
+      <div class="tablewrap"><table id="logTable"><thead><tr><th>№</th><th>Колір</th><th>C, % NaCl</th><th>L, см</th><th>I, у. о.</th><th>I / I₀</th><th>ln(I₀/I)</th></tr></thead><tbody></tbody></table></div>
+      <div class="hint" id="copyMsg">Натисніть «Записати вимір», щоб занести покази фотодіода для увімкнених кольорів.</div>
+    </div>
+  </div>
+  <div class="side">
+    <div class="panel">
+      <h2>Світлодіод</h2>
+      <div class="presets" role="group" aria-label="Кольори світлодіода">
+        <button class="chip b" data-col="b" aria-pressed="true" type="button">Синій 465 нм</button>
+        <button class="chip g" data-col="g" aria-pressed="true" type="button">Зелений 525 нм</button>
+        <button class="chip r" data-col="r" aria-pressed="true" type="button">Червоний 625 нм</button>
+      </div>
+      <label class="check"><input type="checkbox" id="lifi" checked> Передавати дані (мерехтіння Li-Fi)</label>
+    </div>
+    <div class="panel">
+      <div class="row" style="justify-content:space-between"><h2><label for="cRange">Концентрація NaCl</label></h2><span class="val" id="cVal">3,5 %</span></div>
+      <input type="range" id="cRange" min="0" max="25" step="0.1" value="3.5">
+      <div class="presets" id="cPresets">
+        <button class="chip" data-c="0" type="button">0 % (дистильована)</button>
+        <button class="chip" data-c="3.5" type="button">3,5 % (океан)</button>
+        <button class="chip" data-c="5" type="button">5 %</button>
+        <button class="chip" data-c="10" type="button">10 %</button>
+        <button class="chip" data-c="15" type="button">15 %</button>
+        <button class="chip" data-c="20" type="button">20 %</button>
+        <button class="chip" data-c="25" type="button">25 %</button>
+      </div>
+      <div class="hint">г NaCl на 100 мл води. Більше ≈ 26 % розчинити не можна (насичений розчин).</div>
+    </div>
+    <div class="panel">
+      <div class="row" style="justify-content:space-between"><h2><label for="lRange">Відстань у воді L</label></h2><span class="val" id="lVal">20 см</span></div>
+      <input type="range" id="lRange" min="0" max="60" step="1" value="20">
+      <div class="presets" id="lPresets">
+        <button class="chip" data-l="20" type="button">20 см</button>
+        <button class="chip" data-l="40" type="button">40 см</button>
+        <button class="chip" data-l="60" type="button">60 см</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Що забирає світло</h2>
+      <div class="bars" id="lossBars"></div>
+      <div class="legend"><span><i style="background:#7fb6e8"></i>поглинає вода</span><span><i style="background:#9a8f80"></i>поглинає сіль</span><span><i style="background:#e9eef5;border:1px solid var(--line)"></i>доходить</span></div>
+    </div>
+    <div class="panel">
+      <h2>Формула</h2>
+      <div class="formula" id="formulaBox"></div>
+      <label class="check"><input type="checkbox" id="showSalt" checked> Показувати іони солі</label>
+      <label class="check"><input type="checkbox" id="showRuler" checked> Лінійка</label>
+    </div>
+    <button class="reset" id="resetLab" type="button" aria-label="Скинути все" title="Скинути все">↻</button>
+  </div>
+</section>
+
+<!-- ========== SCREEN 2: GRAPHS ========== -->
+<section class="screen" id="scr-graph" aria-label="Графіки">
+  <div class="stage">
+    <div class="readout" id="readout"></div>
+    <div class="charts">
+      <div class="chartcard">
+        <h3 id="g1title">Інтенсивність від відстані</h3>
+        <canvas id="g1" data-h="320" height="320"></canvas>
+      </div>
+      <div class="chartcard">
+        <div class="row" style="justify-content:space-between">
+          <h3 id="g2title">Частка сигналу від концентрації</h3>
+          <select id="g2mode" class="btn" aria-label="Що показувати на другому графіку">
+            <option value="rel">I / I₀, %</option>
+            <option value="ln">ln(I₀/I) — перевірка закону</option>
+          </select>
+        </div>
+        <canvas id="g2" data-h="320" height="320"></canvas>
+      </div>
+    </div>
+    <div class="hint" id="g2hint"></div>
+  </div>
+  <div class="side">
+    <div class="panel">
+      <h2>Кольори на графіках</h2>
+      <div class="presets" role="group" aria-label="Кольори на графіках">
+        <button class="chip b" data-col="b" aria-pressed="true" type="button">Синій</button>
+        <button class="chip g" data-col="g" aria-pressed="true" type="button">Зелений</button>
+        <button class="chip r" data-col="r" aria-pressed="true" type="button">Червоний</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="row" style="justify-content:space-between"><h2><label for="cRange2">Концентрація NaCl</label></h2><span class="val" id="cVal2">3,5 %</span></div>
+      <input type="range" id="cRange2" min="0" max="25" step="0.1" value="3.5">
+      <div class="presets">
+        <button class="chip" data-c="0" type="button">0 %</button>
+        <button class="chip" data-c="3.5" type="button">3,5 %</button>
+        <button class="chip" data-c="7.3" type="button">7,3 %</button>
+        <button class="chip" data-c="14.5" type="button">14,5 %</button>
+        <button class="chip" data-c="25" type="button">25 %</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="row" style="justify-content:space-between"><h2><label for="lRange2">Відстань у воді L</label></h2><span class="val" id="lVal2">20 см</span></div>
+      <input type="range" id="lRange2" min="1" max="60" step="1" value="20">
+      <div class="presets">
+        <button class="chip" data-l="20" type="button">20 см</button>
+        <button class="chip" data-l="40" type="button">40 см</button>
+        <button class="chip" data-l="60" type="button">60 см</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Масштаб</h2>
+      <label class="check"><input type="checkbox" id="zoom"> Збільшити вертикальну вісь</label>
+      <label class="check"><input type="checkbox" id="cross" checked> Позначити точки перетину</label>
+    </div>
+    <div class="panel">
+      <h2>Точки перетину</h2>
+      <div class="hint" style="font-size:13.5px;color:var(--ink)">Криві зрівнюються, коли загальне загасання однакове:<br><span style="font-family:Cambria,serif;font-style:italic">c<sub>w1</sub> + k<sub>1</sub>·C = c<sub>w2</sub> + k<sub>2</sub>·C</span></div>
+      <div id="crossList" class="hint" style="font-size:13.5px;color:var(--ink)"></div>
+      <div class="hint">Відстань L скорочується, тому ці точки однакові на 20, 40 і 60 см.</div>
+    </div>
+    <button class="reset" id="resetGraph" type="button" aria-label="Скинути все" title="Скинути все">↻</button>
+  </div>
+</section>
+
+<!-- ========== SCREEN 3: SALINOMETER GAME ========== -->
+<section class="screen" id="scr-game" aria-label="Оптичний саліометр">
+  <div class="stage">
+    <canvas id="gameCanvas" data-h="360" height="360" aria-label="Кювета з невідомим розчином"></canvas>
+    <div class="panel" style="background:#fff">
+      <h2>Як визначити солоність за світлом</h2>
+      <div class="formula">C = ( ln(I₀ / I) / L − c<sub>w</sub> ) / k<small>L — у метрах; c<sub>w</sub> і k беріть для того кольору, яким вимірюєте (кнопка «Про модель»)</small></div>
+      <div class="hint">Оберіть колір, подивіться покази фотодіода й обчисліть концентрацію. Відповідь зараховується, якщо похибка не більша за 0,5 %.</div>
+    </div>
+  </div>
+  <div class="side">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between"><h2>Рахунок</h2><span class="score" id="score">0 / 0</span></div>
+      <div class="row"><span>Рівень:</span>
+        <select id="level" class="btn" aria-label="Рівень складності">
+          <option value="1">1 — відстань 60 см, ціле C</option>
+          <option value="2">2 — відстань 20–60 см, C з кроком 0,5</option>
+        </select>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Виміряти кольором</h2>
+      <div class="presets" id="gameCols">
+        <button class="chip b" data-g="b" aria-pressed="true" type="button">Синій</button>
+        <button class="chip g" data-g="g" aria-pressed="false" type="button">Зелений</button>
+        <button class="chip r" data-g="r" aria-pressed="false" type="button">Червоний</button>
+      </div>
+      <div class="hint">Найточніше — синім: сіль змінює його найсильніше.</div>
+    </div>
+    <div class="panel">
+      <h2><label for="guess">Ваша відповідь, C (% NaCl)</label></h2>
+      <div class="row"><input type="number" id="guess" min="0" max="25" step="0.1" placeholder="напр. 7,5"><button class="btn" id="checkBtn" type="button">Перевірити</button></div>
+      <div class="msg" id="gameMsg">Нова кювета готова. Виміряйте і обчисліть C.</div>
+      <div class="row"><button class="btn" id="nextBtn" type="button">Наступна кювета</button><button class="btn" id="showBtn" type="button">Показати відповідь</button></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<nav class="tabs" role="tablist" aria-label="Екрани симуляції">
+  <button role="tab" aria-selected="true" data-scr="scr-lab" type="button">Лабораторія<span class="ico">світло крізь кювету</span></button>
+  <button role="tab" aria-selected="false" data-scr="scr-graph" type="button">Графіки<span class="ico">I(L), I/I₀(C)</span></button>
+  <button role="tab" aria-selected="false" data-scr="scr-game" type="button">Саліометр<span class="ico">визнач солоність</span></button>
+</nav>
+
+<dialog id="about">
+  <div class="dlg">
+    <h2>Про модель</h2>
+    <p>Інтенсивність світла, що пройшло шлях <i>L</i> у розчині NaCl з концентрацією <i>C</i>, обчислюється за законом Бугера–Ламберта–Бера:</p>
+    <div class="formula">I = I₀ · e<sup>−(c<sub>w</sub>(λ) + k(λ)·C)·L</sup>,&nbsp;&nbsp; I₀ = 1000 у. о.</div>
+    <table>
+      <thead><tr><th>Колір</th><th>λ, нм</th><th>c<sub>w</sub>, м⁻¹</th><th>k, м⁻¹ на 1 % NaCl</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--blue);font-weight:800">Синій</td><td>465</td><td>0,010</td><td>0,052</td></tr>
+        <tr><td style="color:var(--green);font-weight:800">Зелений</td><td>525</td><td>0,041</td><td>0,032</td></tr>
+        <tr><td style="color:var(--red);font-weight:800">Червоний</td><td>625</td><td>0,28</td><td>0,015</td></tr>
+      </tbody>
+    </table>
+    <h3>Звідки коефіцієнти</h3>
+    <ul>
+      <li><b>c<sub>w</sub></b> — поглинання чистої води (Pope &amp; Fry, 1997).</li>
+      <li><b>k для синього</b> — з досліду Wan Hassan et al. (2024) із синім лазером: 0,76 → 0,83 м⁻¹ при 31,5 → 45 г/л, тобто ≈ 0,052 м⁻¹ на 1 %.</li>
+      <li><b>k для зеленого і червоного</b> — за співвідношенням 41 : 25 : 12 зі статті Olaoye et al. (2024): ≈ 0,032 і ≈ 0,015 м⁻¹ на 1 %.</li>
+    </ul>
+    <h3>Припущення і точність</h3>
+    <p>Пучок вважається паралельним: розбіжність світлодіода, різна чутливість фотодіода до кольорів і домішки солі не враховані. Абсолютні значення k можуть відрізнятися в 1,5–2 рази, але порядок чутливості до солі «синій &gt; зелений &gt; червоний» підтверджують усі джерела.</p>
+    <h3>Джерела</h3>
+    <ol>
+      <li>Wan Hassan W. H. et al. Experimental Study on the Effect of Water Salinity in the UOWC Channel // Journal of Communications. 2024. Vol. 19, No. 9. P. 433–440.</li>
+      <li>Olaoye K., Ponnle A., Ojediran A. Effects of sodium, potassium and calcium chloride salts on underwater visible light communication performance // JESR. 2024. Vol. 30, No. 4. P. 41–55.</li>
+      <li>Kumar S. et al. Analysis on the effect of salinity in underwater wireless optical communication // Marine Georesources &amp; Geotechnology. 2019.</li>
+      <li>Pope R. M., Fry E. S. Absorption spectrum (380–700 nm) of pure water // Applied Optics. 1997. Vol. 36, No. 33. P. 8710–8723.</li>
+    </ol>
+    <p class="hint">За проєктом Біганич Юліани, 10-Б клас, Перечинський ліцей імені героїв 68-го батальйону: «Li-Fi та солона вода: оптичний зв’язок глибин».</p>
+    <div class="row" style="justify-content:flex-end"><button class="btn" id="closeAbout" type="button">Закрити</button></div>
+  </div>
+</dialog>
+
+<script>
+(() => {
+"use strict";
+// ---------- Model ----------
+const I0 = 1000;
+const COL = {
+  b:{name:"Синій", nm:465, cw:0.010, k:0.052,            hex:"#2563eb", rgb:[37,99,235]},
+  g:{name:"Зелений", nm:525, cw:0.041, k:0.052*25/41,    hex:"#16a34a", rgb:[22,163,74]},
+  r:{name:"Червоний", nm:625, cw:0.28, k:0.052*12/41,    hex:"#dc2626", rgb:[220,38,38]}
+};
+const KEYS = ["b","g","r"];
+const intensity = (c, C, Lcm) => I0 * Math.exp(-(COL[c].cw + COL[c].k * C) * Lcm / 100);
+const fmt = (x, d=1) => x.toFixed(d).replace(".", ",").replace("-", "−");
+const crossing = (a, b) => (COL[b].cw - COL[a].cw) / (COL[a].k - COL[b].k);
+
+// ---------- Shared state ----------
+const S = { C:3.5, L:20, sel:{b:true,g:true,r:true}, lifi:true, salt:true, ruler:true, zoom:false, cross:true, g2mode:"rel" };
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ---------- Canvas helpers ----------
+function fitCanvas(cv){
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  if (!cv._baseH) cv._baseH = Number(cv.dataset.h || cv.getAttribute("height")) || 320;
+  const h = cv._baseH;
+  const w = Math.max(1, Math.round(cv.clientWidth));
+  const W = Math.round(w*dpr), H = Math.round(h*dpr);
+  if (cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; }
+  if (cv.style.height !== h + "px") cv.style.height = h + "px";
+  const ctx = cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx, w, h};
+}
+function rrect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+// seeded particles (stable positions, jitter animated)
+let seed = 7; const rnd = () => (seed = (seed*16807) % 2147483647) / 2147483647;
+const PARTS = Array.from({length:400}, () => ({x:rnd(), y:rnd(), na:rnd()<0.5, ph:rnd()*6.28}));
+
+// ---------- Scene drawing ----------
+function drawScene(cv, opt, t){
+  const {ctx, w, h} = fitCanvas(cv);
+  ctx.clearRect(0,0,w,h);
+  // background
+  const g = ctx.createLinearGradient(0,0,0,h); g.addColorStop(0,"#e9f6fd"); g.addColorStop(1,"#cfe8f6");
+  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+  // bench
+  const benchY = h - 70;
+  ctx.fillStyle = "#b9c7d6"; ctx.fillRect(0, benchY, w, 8);
+  ctx.fillStyle = "#d8e2ec"; ctx.fillRect(0, benchY+8, w, h-benchY-8);
+
+  const narrow = w < 640;
+  const ledX = 20, ledW = narrow ? 64 : 92;
+  const meterW = narrow ? 120 : 176;
+  const tankX = ledX + ledW + 26;
+  const maxLen = Math.max(60, w - tankX - meterW - 70);
+  const scale = maxLen / 60;
+  const L = opt.L, tankW = L * scale;
+  const beamY = benchY - 120;
+  const tankTop = beamY - 90, tankBot = benchY - 4;
+  const keys = KEYS.filter(k => opt.sel[k]);
+  const offs = keys.length === 3 ? [-22,0,22] : keys.length === 2 ? [-12,12] : [0];
+
+  // LED body
+  ctx.fillStyle = "#3a4a63"; rrect(ctx, ledX, beamY-34, ledW-20, 68, 10); ctx.fill();
+  ctx.fillStyle = "#56688a"; rrect(ctx, ledX+8, beamY-26, ledW-36, 52, 6); ctx.fill();
+  ctx.fillStyle = "#fff"; ctx.font = `800 ${narrow?10:12}px Nunito, sans-serif`; ctx.textAlign="center";
+  ctx.fillStyle = "#16243b"; ctx.fillText("RGB LED", ledX + (ledW-20)/2, beamY-44);
+  // stand
+  ctx.fillStyle = "#8494a8"; ctx.fillRect(ledX + (ledW-20)/2 - 4, beamY+34, 8, benchY-beamY-34);
+  // lens dome
+  keys.forEach((k,i)=>{
+    const [r,gg,b] = COL[k].rgb, y = beamY + offs[i];
+    const halo = ctx.createRadialGradient(ledX+ledW-14, y, 2, ledX+ledW-14, y, 22);
+    halo.addColorStop(0,`rgba(${r},${gg},${b},.9)`); halo.addColorStop(1,`rgba(${r},${gg},${b},0)`);
+    ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(ledX+ledW-14, y, 22, 0, 6.29); ctx.fill();
+    ctx.fillStyle = COL[k].hex; ctx.beginPath(); ctx.arc(ledX+ledW-18, y, 7, 0, 6.29); ctx.fill();
+  });
+
+  // tank (cuvette)
+  const detX = tankX + tankW + 16;
+  if (L > 0){
+    const salt = opt.hideC ? 0.55 : Math.min(1, opt.C/25);
+    ctx.fillStyle = `rgba(${150-salt*30},${200-salt*25},${235-salt*20},.55)`;
+    ctx.fillRect(tankX, tankTop+18, tankW, tankBot-tankTop-18);
+    // water surface
+    ctx.fillStyle = "rgba(255,255,255,.55)"; ctx.fillRect(tankX, tankTop+18, tankW, 3);
+    // particles
+    if (opt.salt){
+      const n = opt.hideC ? 120 : Math.round(opt.C * 14);
+      for (let i=0;i<Math.min(n, PARTS.length);i++){
+        const p = PARTS[i];
+        const jx = reduceMotion ? 0 : Math.sin(t/700 + p.ph) * 2.2, jy = reduceMotion ? 0 : Math.cos(t/900 + p.ph*1.3) * 2.2;
+        const x = tankX + 4 + p.x*(tankW-8) + jx, y = tankTop + 26 + p.y*(tankBot-tankTop-34) + jy;
+        ctx.fillStyle = opt.hideC ? "rgba(90,90,110,.45)" : (p.na ? "rgba(124,58,237,.75)" : "rgba(16,185,129,.8)");
+        ctx.beginPath(); ctx.arc(x, y, p.na ? 2.3 : 3, 0, 6.29); ctx.fill();
+      }
+    }
+    // glass walls
+    ctx.strokeStyle = "rgba(60,90,120,.85)"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(tankX, tankTop); ctx.lineTo(tankX, tankBot); ctx.lineTo(tankX+tankW, tankBot); ctx.lineTo(tankX+tankW, tankTop); ctx.stroke();
+    // label
+    ctx.fillStyle = "#16243b"; ctx.textAlign = "center"; ctx.font = `800 ${narrow?12:14}px Nunito, sans-serif`;
+    const lbl = opt.hideC ? "C = ?" : `NaCl ${fmt(opt.C)} %`;
+    ctx.fillText(lbl, tankX + tankW/2, tankTop + 8);
+  }
+
+  // beams
+  keys.forEach((k,i)=>{
+    const [r,gg,b] = COL[k].rgb, y = beamY + offs[i];
+    const x0 = ledX + ledW - 10, x1 = tankX, x2 = tankX + tankW, x3 = detX;
+    const out = intensity(k, opt.C, L) / I0;
+    ctx.lineWidth = keys.length === 3 ? 9 : 12;
+    // air segment (no loss)
+    ctx.strokeStyle = `rgba(${r},${gg},${b},.9)`; ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x1,y); ctx.stroke();
+    if (L > 0){
+      const gr = ctx.createLinearGradient(x1,0,x2,0);
+      gr.addColorStop(0,`rgba(${r},${gg},${b},.9)`); gr.addColorStop(1,`rgba(${r},${gg},${b},${(.9*out).toFixed(3)})`);
+      ctx.strokeStyle = gr; ctx.beginPath(); ctx.moveTo(x1,y); ctx.lineTo(x2,y); ctx.stroke();
+    }
+    ctx.strokeStyle = `rgba(${r},${gg},${b},${(.9*out).toFixed(3)})`; ctx.beginPath(); ctx.moveTo(x2,y); ctx.lineTo(x3,y); ctx.stroke();
+    // Li-Fi pulses
+    if (opt.lifi && !reduceMotion){
+      const speed = 0.12, period = 46;
+      const travel = t*speed + i*15, m = Math.floor(travel/period);
+      for (let n = 0, x = x0 + (travel % period); x < x3; n++, x += period){
+        const id = m - n;
+        const bit = ((id * 2654435761 + i * 97) >>> 0) % 3 !== 0;
+        if (!bit) continue;
+        let a = 1;
+        if (x > x1) a = Math.exp(-(COL[k].cw + COL[k].k*opt.C) * (Math.min(x,x2)-x1)/scale/100);
+        ctx.fillStyle = `rgba(255,255,255,${(.8*a).toFixed(3)})`;
+        ctx.fillRect(x, y-2, 12, 4);
+      }
+    }
+  });
+
+  // detector
+  ctx.fillStyle = "#2d3b52"; rrect(ctx, detX, beamY-40, 30, 80, 6); ctx.fill();
+  ctx.fillStyle = "#11161f"; ctx.fillRect(detX-3, beamY-28, 6, 56);
+  ctx.fillStyle = "#8494a8"; ctx.fillRect(detX+11, beamY+40, 8, benchY-beamY-40);
+  ctx.fillStyle = "#16243b"; ctx.font = `800 ${narrow?10:12}px Nunito, sans-serif`; ctx.textAlign="center";
+  ctx.fillText("BPW34", detX+15, beamY-48);
+
+  // meter
+  const mx = Math.min(w - meterW - 10, detX + 44), my = beamY - 78, mh = 40 + 34*Math.max(1,keys.length);
+  ctx.fillStyle = "#13254a"; rrect(ctx, mx, my, meterW, mh, 12); ctx.fill();
+  ctx.fillStyle = "#cfe0ff"; ctx.textAlign = "left"; ctx.font = `700 ${narrow?11:12}px Nunito, sans-serif`;
+  ctx.fillText(opt.hideC ? "Фотодіод, у. о." : "Фотодіод: I, у. о. (I/I₀)", mx+12, my+22);
+  keys.forEach((k,i)=>{
+    const I = intensity(k, opt.C, L);
+    ctx.fillStyle = COL[k].hex; ctx.beginPath(); ctx.arc(mx+18, my+48+i*34, 6, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.font = `700 ${narrow?16:20}px "JetBrains Mono", monospace`;
+    ctx.fillText(Math.round(I).toString(), mx+32, my+55+i*34);
+    if (!opt.hideC && !narrow){
+      ctx.fillStyle = "#9fb6d8"; ctx.font = `500 13px "JetBrains Mono", monospace`;
+      ctx.fillText(`${fmt(I/10)} %`, mx+92, my+55+i*34);
+    }
+  });
+  if (!keys.length){ ctx.fillStyle="#fff"; ctx.font="700 13px Nunito"; ctx.fillText("Увімкніть колір", mx+12, my+52); }
+
+  // ruler
+  if (opt.ruler){
+    const ry = benchY + 22;
+    ctx.fillStyle = "#fff7d6"; ctx.strokeStyle = "#c9a64a"; ctx.lineWidth = 1;
+    rrect(ctx, tankX-6, ry-12, maxLen+12, 34, 4); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#6b5414"; ctx.textAlign="center"; ctx.font = "700 11px Nunito, sans-serif";
+    for (let cm=0; cm<=60; cm+=5){
+      const x = tankX + cm*scale, big = cm % 10 === 0;
+      ctx.fillRect(x-0.5, ry-12, 1, big ? 12 : 7);
+      if (big) ctx.fillText(cm + (cm===60?" см":""), x, ry+14);
+    }
+    // L marker
+    ctx.fillStyle = "#f28c28"; ctx.beginPath(); ctx.moveTo(tankX+L*scale, ry-12); ctx.lineTo(tankX+L*scale-6, ry-20); ctx.lineTo(tankX+L*scale+6, ry-20); ctx.fill();
+  }
+  ctx.fillStyle = "#16243b"; ctx.textAlign="left"; ctx.font = "800 13px Nunito, sans-serif";
+  ctx.fillText(`L = ${L} см`, tankX, tankBot + (opt.ruler? 60 : 22));
+}
+
+// ---------- Charts ----------
+function chart(cv, cfg){
+  const {ctx, w, h} = fitCanvas(cv);
+  ctx.clearRect(0,0,w,h);
+  const pad = {l:56, r:58, t:14, b:46};
+  const X = v => pad.l + (v - cfg.x0)/(cfg.x1 - cfg.x0) * (w - pad.l - pad.r);
+  const Y = v => h - pad.b - (v - cfg.y0)/(cfg.y1 - cfg.y0) * (h - pad.t - pad.b);
+  ctx.font = "600 12px Nunito, sans-serif"; ctx.fillStyle = "#5b6b82"; ctx.strokeStyle = "#e3eaf2"; ctx.lineWidth = 1;
+  // grid + y ticks
+  ctx.textAlign = "right";
+  cfg.yt.forEach(v => { const y = Y(v); ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w-pad.r, y); ctx.stroke(); ctx.fillText(cfg.yfmt(v), pad.l-8, y+4); });
+  ctx.textAlign = "center";
+  cfg.xt.forEach(v => { const x = X(v); ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, h-pad.b); ctx.stroke(); ctx.fillText(fmt(v, v%1?1:0), x, h-pad.b+16); });
+  ctx.strokeStyle = "#9aabbf"; ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, h-pad.b); ctx.lineTo(w-pad.r, h-pad.b); ctx.stroke();
+  ctx.fillStyle = "#16243b"; ctx.font = "700 12.5px Nunito, sans-serif";
+  ctx.fillText(cfg.xlabel, (pad.l + w - pad.r)/2, h - 8);
+  ctx.save(); ctx.translate(14, (pad.t + h - pad.b)/2); ctx.rotate(-Math.PI/2); ctx.fillText(cfg.ylabel, 0, 0); ctx.restore();
+  // markers (vertical lines)
+  (cfg.vlines||[]).forEach(m => {
+    const x = X(m.x); ctx.strokeStyle = m.color; ctx.setLineDash(m.dash||[]); ctx.lineWidth = m.width||1.5;
+    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, h-pad.b); ctx.stroke(); ctx.setLineDash([]);
+    if (m.label){ ctx.fillStyle = m.color; ctx.font="800 11.5px Nunito, sans-serif"; ctx.textAlign="center"; ctx.fillText(m.label, x, pad.t+11); }
+  });
+  // series
+  const labels = [];
+  cfg.series.forEach(s => {
+    ctx.strokeStyle = s.color; ctx.lineWidth = 3; ctx.beginPath();
+    for (let i=0;i<=120;i++){ const xv = cfg.x0 + (cfg.x1-cfg.x0)*i/120, yv = s.f(xv); const x = X(xv), y = Y(Math.max(cfg.y0, Math.min(cfg.y1, yv))); i ? ctx.lineTo(x,y) : ctx.moveTo(x,y); }
+    ctx.stroke();
+    // cursor point
+    if (cfg.cursor != null){ const yv = s.f(cfg.cursor); ctx.fillStyle = s.color; ctx.beginPath(); ctx.arc(X(cfg.cursor), Y(Math.max(cfg.y0, Math.min(cfg.y1, yv))), 5.5, 0, 6.29); ctx.fill(); ctx.strokeStyle="#fff"; ctx.lineWidth=2; ctx.stroke(); }
+    labels.push({y: Y(Math.max(cfg.y0, Math.min(cfg.y1, s.f(cfg.x1)))), text: cfg.endfmt(s.f(cfg.x1)), color: s.color});
+  });
+  // end labels without overlap
+  labels.sort((a,b)=>a.y-b.y);
+  for (let i=1;i<labels.length;i++) if (labels[i].y - labels[i-1].y < 15) labels[i].y = labels[i-1].y + 15;
+  ctx.textAlign = "left"; ctx.font = "800 12px Nunito, sans-serif";
+  labels.forEach(l => { ctx.fillStyle = l.color; ctx.fillText(l.text, w - pad.r + 6, l.y + 4); });
+}
+
+function drawGraphs(){
+  const keys = KEYS.filter(k => S.sel[k]);
+  // readout tiles
+  document.getElementById("readout").innerHTML = KEYS.map(k => {
+    const I = intensity(k, S.C, S.L);
+    return `<div class="tile ${k}"><div class="l">${COL[k].name}, ${COL[k].nm} нм</div><div class="n">${Math.round(I)} у. о.</div><div class="l">I/I₀ = ${fmt(I/10)} % · ln(I₀/I) = ${fmt(Math.log(I0/I),3)}</div></div>`;
+  }).join("");
+  // chart 1: I(L)
+  document.getElementById("g1title").textContent = `Інтенсивність від відстані, C = ${fmt(S.C)} % NaCl`;
+  const y0 = S.zoom ? 400 : 0;
+  chart(document.getElementById("g1"), {
+    x0:0, x1:60, y0, y1:1000, xt:[0,10,20,30,40,50,60], yt: S.zoom ? [400,500,600,700,800,900,1000] : [0,200,400,600,800,1000],
+    yfmt: v => String(v), endfmt: v => String(Math.round(v)),
+    xlabel:"Відстань у воді L, см", ylabel:"I, у. о. (I₀ = 1000)", cursor:S.L,
+    vlines:[{x:S.L, color:"#f28c28", dash:[5,4]}],
+    series: keys.map(k => ({color:COL[k].hex, f: L => intensity(k, S.C, L)}))
+  });
+  // chart 2
+  const ln = S.g2mode === "ln";
+  document.getElementById("g2title").textContent = ln ? `ln(I₀/I) від концентрації, L = ${S.L} см` : `Частка сигналу I/I₀ від концентрації, L = ${S.L} см`;
+  const vl = [{x:S.C, color:"#f28c28", dash:[5,4]}];
+  if (S.cross){
+    vl.push({x:crossing("b","r"), color:"#7c3aed", dash:[2,3], label:"7,3 %"});
+    vl.push({x:crossing("g","r"), color:"#7c3aed", dash:[2,3], label:"14,5 %"});
+  }
+  let ymax = 1;
+  if (ln){ ymax = Math.max(...KEYS.map(k => Math.log(I0/intensity(k,25,S.L)))); ymax = Math.ceil(ymax*10)/10 + 0.05; }
+  const yt = ln ? Array.from({length:6},(_,i)=> +(ymax*i/5).toFixed(2)) : (S.zoom ? [40,50,60,70,80,90,100] : [0,20,40,60,80,100]);
+  chart(document.getElementById("g2"), {
+    x0:0, x1:25, y0: ln ? 0 : (S.zoom?40:0), y1: ln ? ymax : 100, xt:[0,3.5,5,10,15,20,25], yt,
+    yfmt: v => ln ? fmt(v,2) : String(v), endfmt: v => ln ? fmt(v,3) : `${fmt(v)} %`,
+    xlabel:"Концентрація NaCl, %", ylabel: ln ? "ln(I₀/I)" : "I / I₀, %", cursor:S.C, vlines:vl,
+    series: keys.map(k => ({color:COL[k].hex, f: C => ln ? Math.log(I0/intensity(k, C, S.L)) : intensity(k, C, S.L)/10}))
+  });
+  document.getElementById("g2hint").textContent = ln
+    ? `Пряма лінія означає, що закон Бугера–Ламберта–Бера виконується. Нахил прямої дорівнює k·L, а відрізок на осі — cw·L. Для синього на ${S.L} см: нахил ${fmt(COL.b.k*S.L/100,4)} на 1 %.`
+    : "I₀ = 1000 у. о. — світло на вході у воду, тому червоний навіть при 0 % починається не зі 100 %: його поглинає сама вода.";
+  document.getElementById("crossList").innerHTML =
+    `Синій = червоний: <b>C ≈ ${fmt(crossing("b","r"))} %</b><br>Зелений = червоний: <b>C ≈ ${fmt(crossing("g","r"))} %</b><br>Синій = зелений: <b>C ≈ ${fmt(crossing("b","g"))} %</b>`;
+}
+
+// ---------- Lab side panels ----------
+function updateLabPanels(){
+  const keys = KEYS.filter(k => S.sel[k]);
+  document.getElementById("lossBars").innerHTML = (keys.length ? keys : KEYS).map(k => {
+    const Aw = COL[k].cw*S.L/100, As = COL[k].k*S.C*S.L/100, A = Aw + As;
+    const left = Math.exp(-A), lost = 1-left;
+    const pw = A ? lost*Aw/A : 0, ps = A ? lost*As/A : 0;
+    return `<div class="bar"><span style="color:${COL[k].hex};font-weight:800">${COL[k].name}</span>
+      <span class="track" title="вода ${fmt(pw*100)} %, сіль ${fmt(ps*100)} %"><span style="width:${(pw*100*1.5).toFixed(2)}%;background:#7fb6e8"></span><span style="width:${(ps*100*1.5).toFixed(2)}%;background:#9a8f80"></span><span style="flex:1;background:#e9eef5"></span></span>
+      <span style="text-align:right;font-family:var(--font-mono);font-size:12px">−${fmt(lost*100)} %</span></div>`;
+  }).join("") + `<div class="hint">Повна ширина смуги — 67 % світла (масштаб ×1,5).</div>`;
+  const k = keys[0] || "b";
+  const I = intensity(k, S.C, S.L);
+  document.getElementById("formulaBox").innerHTML =
+    `I = 1000 · e<sup>−(${fmt(COL[k].cw,3)} + ${fmt(COL[k].k,3)}·${fmt(S.C)})·${fmt(S.L/100,2)}</sup> = <b style="color:${COL[k].hex}">${Math.round(I)}</b> у. о.<small>${COL[k].name.toLowerCase()} колір; L — у метрах; c<sub>w</sub> і k — у м⁻¹</small>`;
+}
+
+// ---------- Sync controls ----------
+function setC(v){ S.C = Math.max(0, Math.min(25, +v)); ["cRange","cRange2"].forEach(id => document.getElementById(id).value = S.C); ["cVal","cVal2"].forEach(id => document.getElementById(id).textContent = `${fmt(S.C)} %`); refresh(); }
+function setL(v, min=0){ S.L = Math.max(min, Math.min(60, Math.round(+v))); ["lRange","lRange2"].forEach(id => document.getElementById(id).value = S.L); ["lVal","lVal2"].forEach(id => document.getElementById(id).textContent = `${S.L} см`); refresh(); }
+function refresh(){ updateLabPanels(); if (cur === "scr-graph") drawGraphs(); }
+
+document.getElementById("cRange").addEventListener("input", e => setC(e.target.value));
+document.getElementById("cRange2").addEventListener("input", e => setC(e.target.value));
+document.getElementById("lRange").addEventListener("input", e => setL(e.target.value));
+document.getElementById("lRange2").addEventListener("input", e => setL(e.target.value, 1));
+document.querySelectorAll("[data-c]").forEach(b => b.addEventListener("click", () => setC(b.dataset.c)));
+document.querySelectorAll("[data-l]").forEach(b => b.addEventListener("click", () => setL(b.dataset.l)));
+document.querySelectorAll("[data-col]").forEach(b => b.addEventListener("click", () => {
+  const k = b.dataset.col; S.sel[k] = !S.sel[k];
+  document.querySelectorAll(`[data-col="${k}"]`).forEach(x => x.setAttribute("aria-pressed", S.sel[k]));
+  refresh();
+}));
+const bindCheck = (id, key, after) => document.getElementById(id).addEventListener("change", e => { S[key] = e.target.checked; after && after(); });
+bindCheck("lifi","lifi"); bindCheck("showSalt","salt"); bindCheck("showRuler","ruler");
+bindCheck("zoom","zoom", drawGraphs); bindCheck("cross","cross", drawGraphs);
+document.getElementById("g2mode").addEventListener("change", e => { S.g2mode = e.target.value; drawGraphs(); });
+
+function resetAll(){
+  S.sel = {b:true,g:true,r:true}; document.querySelectorAll("[data-col]").forEach(x => x.setAttribute("aria-pressed","true"));
+  S.lifi = S.salt = S.ruler = true; S.zoom = false; S.cross = true; S.g2mode = "rel";
+  ["lifi","showSalt","showRuler","cross"].forEach(id => document.getElementById(id).checked = true);
+  document.getElementById("zoom").checked = false; document.getElementById("g2mode").value = "rel";
+  setL(20); setC(3.5);
+}
+document.getElementById("resetLab").addEventListener("click", resetAll);
+document.getElementById("resetGraph").addEventListener("click", resetAll);
+
+// ---------- Measurement log ----------
+const log = [];
+function renderLog(){
+  document.querySelector("#logTable tbody").innerHTML = log.map((r,i) =>
+    `<tr><td>${i+1}</td><td style="color:${COL[r.k].hex};font-weight:800">${COL[r.k].name}</td><td>${fmt(r.C)}</td><td>${r.L}</td><td>${Math.round(r.I)}</td><td>${fmt(r.I/10)} %</td><td>${fmt(Math.log(I0/r.I),3)}</td></tr>`).join("");
+  const wrap = document.querySelector(".tablewrap"); wrap.scrollTop = wrap.scrollHeight;
+}
+document.getElementById("recBtn").addEventListener("click", () => {
+  const keys = KEYS.filter(k => S.sel[k]);
+  if (!keys.length){ document.getElementById("copyMsg").textContent = "Увімкніть хоча б один колір світлодіода."; return; }
+  keys.forEach(k => log.push({k, C:S.C, L:S.L, I:intensity(k, S.C, S.L)}));
+  document.getElementById("copyMsg").textContent = `Записано ${keys.length} ${keys.length===1?"рядок":"рядки"}. Змініть C або L і запишіть ще.`;
+  renderLog();
+});
+document.getElementById("clrBtn").addEventListener("click", () => { log.length = 0; renderLog(); document.getElementById("copyMsg").textContent = "Журнал очищено."; });
+document.getElementById("copyBtn").addEventListener("click", async () => {
+  const msg = document.getElementById("copyMsg");
+  if (!log.length){ msg.textContent = "Журнал порожній: спершу запишіть вимір."; return; }
+  const txt = ["№\tКолір\tC, %\tL, см\tI, у. о.\tI/I0, %\tln(I0/I)"].concat(log.map((r,i)=>[i+1, COL[r.k].name, fmt(r.C), r.L, Math.round(r.I), fmt(r.I/10), fmt(Math.log(I0/r.I),3)].join("\t"))).join("\n");
+  try { await navigator.clipboard.writeText(txt); msg.textContent = "Таблицю скопійовано. Вставте її в Excel або Word."; }
+  catch(e){ msg.textContent = "Браузер не дозволив копіювання. Виділіть таблицю мишкою і скопіюйте вручну."; }
+});
+
+// ---------- Game ----------
+const G = { C:0, L:60, col:"b", score:0, tries:0, done:false, attempts:0 };
+function newCuvette(){
+  const lvl = document.getElementById("level").value;
+  if (lvl === "1"){ G.C = 1 + Math.floor(Math.random()*25); if (G.C>25) G.C = 25; G.L = 60; }
+  else { G.C = Math.round((0.5 + Math.random()*24.5)*2)/2; G.L = [20,30,40,50,60][Math.floor(Math.random()*5)]; }
+  G.done = false; G.attempts = 0;
+  document.getElementById("guess").value = "";
+  const m = document.getElementById("gameMsg"); m.className = "msg"; m.textContent = `Нова кювета: L = ${G.L} см. Виміряйте і обчисліть C.`;
+}
+document.querySelectorAll("[data-g]").forEach(b => b.addEventListener("click", () => {
+  G.col = b.dataset.g; document.querySelectorAll("[data-g]").forEach(x => x.setAttribute("aria-pressed", x === b));
+}));
+document.getElementById("level").addEventListener("change", newCuvette);
+document.getElementById("nextBtn").addEventListener("click", newCuvette);
+document.getElementById("checkBtn").addEventListener("click", () => {
+  const m = document.getElementById("gameMsg");
+  const v = parseFloat(String(document.getElementById("guess").value).replace(",", "."));
+  if (isNaN(v)){ m.className = "msg bad"; m.textContent = "Введіть число, наприклад 7,5."; return; }
+  if (G.done){ m.className = "msg"; m.textContent = "Цю кювету вже розв’язано. Натисніть «Наступна кювета»."; return; }
+  G.attempts++;
+  if (Math.abs(v - G.C) <= 0.5){
+    G.score++; G.tries++; G.done = true; m.className = "msg ok";
+    m.textContent = `Правильно! C = ${fmt(G.C)} % NaCl.`;
+  } else {
+    m.className = "msg bad";
+    m.textContent = v > G.C ? `Забагато. Перевірте розрахунок (спроба ${G.attempts}).` : `Замало. Перевірте розрахунок (спроба ${G.attempts}).`;
+    if (G.attempts >= 3){ G.tries++; G.done = true; m.textContent += ` Правильна відповідь: ${fmt(G.C)} %.`; }
+  }
+  document.getElementById("score").textContent = `${G.score} / ${G.tries}`;
+});
+document.getElementById("showBtn").addEventListener("click", () => {
+  const m = document.getElementById("gameMsg");
+  if (!G.done){ G.done = true; G.tries++; document.getElementById("score").textContent = `${G.score} / ${G.tries}`; }
+  const I = intensity(G.col, G.C, G.L);
+  m.className = "msg";
+  m.textContent = `C = ${fmt(G.C)} %. Розв’язок (${COL[G.col].name.toLowerCase()}): ln(1000/${Math.round(I)}) / ${fmt(G.L/100,2)} = ${fmt(Math.log(I0/I)/(G.L/100),3)} м⁻¹; (${fmt(Math.log(I0/I)/(G.L/100),3)} − ${fmt(COL[G.col].cw,3)}) / ${fmt(COL[G.col].k,4)} ≈ ${fmt((Math.log(I0/I)/(G.L/100) - COL[G.col].cw)/COL[G.col].k)} %.`;
+});
+
+// ---------- Tabs & dialog ----------
+let cur = "scr-lab";
+document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => {
+  cur = b.dataset.scr;
+  document.querySelectorAll("nav.tabs button").forEach(x => x.setAttribute("aria-selected", x === b));
+  document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === cur));
+  if (cur === "scr-graph") drawGraphs();
+}));
+const dlg = document.getElementById("about");
+document.getElementById("aboutBtn").addEventListener("click", () => dlg.showModal());
+document.getElementById("closeAbout").addEventListener("click", () => dlg.close());
+window.addEventListener("resize", () => { if (cur === "scr-graph") drawGraphs(); });
+
+// ---------- Loop ----------
+function frame(t){
+  if (cur === "scr-lab") drawScene(document.getElementById("labCanvas"), {C:S.C, L:S.L, sel:S.sel, lifi:S.lifi, salt:S.salt, ruler:S.ruler}, t);
+  if (cur === "scr-game") drawScene(document.getElementById("gameCanvas"), {C:G.C, L:G.L, sel:{b:G.col==="b", g:G.col==="g", r:G.col==="r"}, lifi:true, salt:true, ruler:true, hideC:true}, t);
+  requestAnimationFrame(frame);
+}
+newCuvette(); setL(20); setC(3.5);
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
